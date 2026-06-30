@@ -182,4 +182,15 @@ To enable user accounts, session synchronization, and authentication, you must i
     ```
     http://127.0.0.1:5000/
     ```
+---
 
+## Preview
+
+<p align="center">
+  <img src="assets/login page.png" width="45%">
+  <img src="assets/home page.png" width="45%">
+  <img src="assets/map page.png" width="45%">
+  <img src="assets/spot page.png" width="45%">
+  <img src="assets/listing spot.png" width="45%">
+  <img src="assets/user dashboard.png" width="45%">
+</p>
