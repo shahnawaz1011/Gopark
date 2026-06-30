@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ spot.name }} - Smart Parking Finder</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .detail-container {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        }
+        .spot-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 2rem;
+        }
+        .spot-title h1 {
+            font-size: 2.2rem;
+            color: #2c3e50;
+            margin: 0;
+        }
+        .spot-address {
+            color: #7f8c8d;
+            font-size: 1.1rem;
+            margin-top: 0.5rem;
+        }
+        .status-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        .status-available { background: #e8f8f5; color: #27ae60; }
+        .status-unavailable { background: #fdedec; color: #e74c3c; }
+
+        .spot-main {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 2rem;
+        }
+
+        .image-gallery {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .main-image {
+            width: 100%;
+            height: 400px;
+            object-fit: cover;
+            border-radius: 8px;
+            background: #f0f0f0;
+        }
+        .thumbnail-row {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+        }
+        .thumbnail {
+            width: 100px;
+            height: 70px;
+            object-fit: cover;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+        .thumbnail:hover { opacity: 0.8; }
+
+        .info-card {
+            background: #fdfdfd;
+            border: 1px solid #f0f0f0;
+            padding: 1.5rem;
+            border-radius: 8px;
+            height: fit-content;
+        }
+        .price-tag {
+            font-size: 1.8rem;
+            color: #2ecc71;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+        .price-tag span { font-size: 1rem; color: #7f8c8d; font-weight: normal; }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .info-label { font-size: 0.8rem; color: #95a5a6; text-transform: uppercase; letter-spacing: 0.5px; }
+        .info-value { font-weight: 600; color: #34495e; }
+
+        .facilities-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 1rem;
+        }
+        .facility-tag {
+            background: #f1f2f6;
+            color: #57606f;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 2rem;
+        }
+        .btn-large {
+            padding: 12px;
+            font-size: 1.1rem;
+            text-align: center;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: transform 0.2s, background 0.2s;
+        }
+        .btn-large:hover { transform: translateY(-2px); }
+        .btn-primary { background: #3498db; color: white; }
+        .btn-success { background: #27ae60; color: white; }
+        .btn-outline { border: 2px solid #3498db; color: #3498db; }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            color: #7f8c8d;
+            text-decoration: none;
+            margin-bottom: 1.5rem;
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: #2c3e50; }
+        .back-link i { margin-right: 8px; }
+
+        @media (max-width: 768px) {
+            .spot-main { grid-template-columns: 1fr; }
+            .spot-header { flex-direction: column; gap: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <header id="main-header">
+        <div class="nav-content">
+            <a href="/" class="logo-link">
+                <img src="{{ url_for('static', filename='gopark icon.png') }}" alt="GoPark Logo" class="logo-img">
+                <span class="logo-text">GoPark</span>
+            </a>
+            
+            <button class="menu-toggle" id="menu-toggle" aria-label="Toggle navigation">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+
+            <nav class="nav-links" id="nav-links">
+                <div class="user-controls">
+                    {% if username %}
+                    <span class="user-welcome">Hi, {{ username }}</span>
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-accent">Dashboard</a>
+                    <a href="{{ url_for('logout') }}" class="btn btn-logout">Logout</a>
+                    {% else %}
+                    <a href="{{ url_for('login') }}" class="btn btn-outline">Login</a>
+                    <a href="{{ url_for('signup') }}" class="btn btn-primary">Sign Up</a>
+                    {% endif %}
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <div class="detail-container">
+        <a href="{{ url_for('find_spot') }}" class="back-link">
+            <i class="fas fa-arrow-left"></i> Back to Map
+        </a>
+
+        <div class="spot-header">
+            <div class="spot-title">
+                <h1>{{ spot.name }}</h1>
+                <div class="spot-address">
+                    <i class="fas fa-map-marker-alt"></i> {{ spot.address or 'Address not available' }}
+                </div>
+            </div>
+            <div class="status-badge {% if spot.available > 0 %}status-available{% else %}status-unavailable{% endif %}">
+                {% if spot.available > 0 %}
+                    <i class="fas fa-check-circle"></i> Available Now ({{ spot.available }} spots)
+                {% else %}
+                    <i class="fas fa-times-circle"></i> Fully Booked
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="spot-main">
+            <div class="image-gallery">
+                <img src="{% if spot.images %}{{ url_for('static', filename='uploads/' + spot.images[0]) }}{% else %}https://placehold.co/800x600?text=No+Available+Images{% endif %}" alt="{{ spot.name }}" class="main-image" id="mainImage">
+                {% if spot.images and spot.images|length > 1 %}
+                <div class="thumbnail-row">
+                    {% for img in spot.images %}
+                    <img src="{{ url_for('static', filename='uploads/' + img) }}" alt="Thumbnail" class="thumbnail" onclick="document.getElementById('mainImage').src=this.src">
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <div style="margin-top: 2rem;">
+                    <h3>Description</h3>
+                    <p style="color: #57606f; line-height: 1.6;">
+                        This is a premium parking spot located in {{ spot.name }}. 
+                        It offer secure and convenient parking for your vehicle.
+                        {% if spot.parking_type %}This is a <strong>{{ spot.parking_type }}</strong>.{% endif %}
+                    </p>
+                    
+                    <h3 style="margin-top: 1.5rem;">Facilities</h3>
+                    <div class="facilities-list">
+                        {% if spot.facilities and spot.facilities != 'None' %}
+                            {% for facility in spot.facilities.split(',') %}
+                                <span class="facility-tag"><i class="fas fa-star" style="font-size: 0.7rem; margin-right: 5px;"></i> {{ facility.strip() }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <span style="color: #7f8c8d;">No specific facilities listed.</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-card">
+                <div class="price-tag">
+                    ₹{{ spot.price_per_hour }}<span>/hour</span>
+                </div>
+                
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Capacity</span>
+                        <span class="info-value">{{ spot.capacity }} Slots</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Parking Size</span>
+                        <span class="info-value">{{ spot.parking_size or 'Standard' }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Vehicle Type</span>
+                        <span class="info-value">{{ spot.vehicle_type or 'Any' }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Size (sqft)</span>
+                        <span class="info-value">{{ spot.sqft or 'N/A' }}</span>
+                    </div>
+                </div>
+
+                <div style="margin: 1.5rem 0;">
+                    <span class="info-label">Available Hours</span>
+                    <div class="info-value" style="font-size: 0.9rem; margin-top: 5px;">
+                        {% if spot.available_from and spot.available_to %}
+                            {{ spot.available_from.replace('T', ' ') }} to {{ spot.available_to.replace('T', ' ') }}
+                        {% else %}
+                            24/7 Access
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <a href="https://www.google.com/maps/dir/?api=1&destination={{ spot.lat }},{{ spot.lng }}" target="_blank" class="btn-large btn-outline">
+                        <i class="fas fa-directions"></i> Get Directions
+                    </a>
+                    {% if spot.available > 0 %}
+                    <button onclick="openBookingModal()" class="btn-large btn-success">
+                        <i class="fas fa-bolt"></i> Instant Book
+                    </button>
+                    {% else %}
+                    <button class="btn-large" style="background: #bdc3c7; color: white; cursor: not-allowed;" disabled>
+                        Currently Unavailable
+                    </button>
+                    {% endif %}
+                </div>
+                
+                <div style="margin-top: 1.5rem; text-align: center;">
+                    <p style="font-size: 0.8rem; color: #95a5a6;">Need help? <a href="#" style="color: #3498db;">Contact Owner</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Booking Modal -->
+    <div id="bookingModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Book this Parking Spot</h2>
+                <button class="close-modal" onclick="closeBookingModal()">&times;</button>
+            </div>
+            <p class="modal-subtitle">For best experience <a href="{{ url_for('login') }}">sign in to your account</a></p>
+            
+            <div class="form-divider">or</div>
+
+            <form class="booking-form" onsubmit="handleBooking(event)">
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="booking-name" placeholder="Enter full name" required value="{{ username if username else '' }}">
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="booking-email" placeholder="Enter email address" required>
+                </div>
+                <div class="form-group">
+                    <label>Mobile</label>
+                    <input type="tel" id="booking-mobile" placeholder="Enter mobile number" required>
+                </div>
+                <div class="form-group">
+                    <label>Vehicle Number</label>
+                    <input type="text" id="booking-vehicle" placeholder="e.g. MH12AB1234" required>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>Start Time</label>
+                        <input type="datetime-local" id="booking-start" required>
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>End Time</label>
+                        <input type="datetime-local" id="booking-end" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn-book-now">Book Now</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openBookingModal() {
+            document.getElementById('bookingModal').style.display = 'flex';
+            document.body.style.overflow = 'hidden'; // Prevent scrolling
+        }
+
+        function closeBookingModal() {
+            document.getElementById('bookingModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        // Close modal when clicking outside of it
+        window.onclick = function(event) {
+            const modal = document.getElementById('bookingModal');
+            if (event.target == modal) {
+                closeBookingModal();
+            }
+        }
+
+        async function handleBooking(event) {
+            event.preventDefault();
+            
+            const name = document.getElementById('booking-name').value;
+            const email = document.getElementById('booking-email').value;
+            const mobile = document.getElementById('booking-mobile').value;
+            const vehicle = document.getElementById('booking-vehicle').value;
+            const start = document.getElementById('booking-start').value;
+            const end = document.getElementById('booking-end').value;
+
+            // Simple validation
+            if (!start || !end) {
+                alert("Please select both start and end times.");
+                return;
+            }
+
+            if (new Date(end) <= new Date(start)) {
+                alert("End time must be after start time.");
+                return;
+            }
+
+            // For demo purposes, we'll just show a success message
+            // In a real app, you would send this to the backend
+            alert(`Booking successful for ${vehicle}!\n\nName: ${name}\nTime: ${start} to ${end}`);
+            closeBookingModal();
+        }
+    </script>
+</body>
+</html>

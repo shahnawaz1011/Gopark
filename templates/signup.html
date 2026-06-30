@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Sign Up - Smart Parking</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Outfit:wght@400;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+</head>
+
+<body class="auth-body">
+    <div class="auth-split-wrapper">
+        <div class="auth-image-panel">
+            <div class="auth-image-overlay">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 2L2 22h20L12 2zm0 4.5l6.5 13h-13L12 6.5z" />
+                </svg>
+            </div>
+        </div>
+        <div class="auth-form-panel">
+            <a href="{{ url_for('home') }}" class="auth-back">
+                &larr;
+            </a>
+            <h2>Sign up</h2>
+            <p class="auth-subtitle">Already have an account? <a href="{{ url_for('login') }}">Log in</a></p>
+
+            <p id="error-message" class="flash error" style="display:none;"></p>
+
+            <form id="signup-form">
+                <div class="auth-input-group">
+                    <label for="username">Display Name</label>
+                    <input type="text" id="username" placeholder="John Martinez" required>
+                </div>
+                <div class="auth-input-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" placeholder="john52martinez@gmail.com" required>
+                </div>
+                <div class="auth-input-group">
+                    <label for="password">Password</label>
+                    <div class="auth-password-wrapper">
+                        <input type="password" id="password" placeholder="Create a password" required>
+                        <button type="button" class="auth-password-toggle" id="toggle-pwd"
+                            onclick="togglePassword('password')">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" id="email-btn" class="auth-submit-btn">Create Account</button>
+
+                <div class="terms-check">
+                    <input type="checkbox" id="terms" required checked>
+                    <label for="terms">I agree to the <a href="#">Terms & Condition</a></label>
+                </div>
+            </form>
+
+            <div class="auth-divider">or</div>
+
+            <div class="social-btns">
+                <button id="google-login" class="social-btn" type="button">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google">
+                    Continue with Google
+                </button>
+                <button class="social-btn" type="button">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/b/b8/2021_Facebook_icon.svg"
+                        alt="Facebook">
+                    Continue with Facebook
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- Include Three.js via CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
+
+    <div id="dotted-surface-container"></div>
+    <script>
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            if (input.type === 'password') {
+                input.type = 'text';
+            } else {
+                input.type = 'password';
+            }
+        }
+        const firebaseConfig = {
+            apiKey: "AIzaSyA0E3I4sSID6v4cglJFO851oB2uMe0NaUE",
+            authDomain: "smart-parking-ab8f2.firebaseapp.com",
+            projectId: "smart-parking-ab8f2",
+            storageBucket: "smart-parking-ab8f2.firebasestorage.app",
+            messagingSenderId: "1076740170957",
+            appId: "1:1076740170957:web:97565e30f544ec0021f584",
+            measurementId: "G-X5V2WKXZX3"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        async function sendTokenToBackend(user) {
+            const idToken = await user.getIdToken();
+            const response = await fetch('/api/sessionLogin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idToken: idToken })
+            });
+            const data = await response.json();
+            if (data.success) {
+                window.location.href = '/';
+            } else {
+                document.getElementById('error-message').innerText = data.message || "Failed to sign up on server.";
+                document.getElementById('error-message').style.display = 'block';
+            }
+        }
+
+        document.getElementById('signup-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('email-btn');
+            btn.innerText = "Processing...";
+            btn.disabled = true;
+
+            const name = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            auth.createUserWithEmailAndPassword(email, password)
+                .then(userCredential => {
+                    return userCredential.user.updateProfile({ displayName: name })
+                        .then(() => userCredential.user);
+                })
+                .then(user => sendTokenToBackend(user))
+                .catch(error => {
+                    document.getElementById('error-message').innerText = error.message;
+                    document.getElementById('error-message').style.display = 'block';
+                    btn.innerText = "Sign Up with Email";
+                    btn.disabled = false;
+                });
+        });
+
+        document.getElementById('google-login').addEventListener('click', () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider)
+                .then(result => sendTokenToBackend(result.user))
+                .catch(error => {
+                    document.getElementById('error-message').innerText = error.message;
+                    document.getElementById('error-message').style.display = 'block';
+                });
+        });
+        (function () {
+            let scene, camera, renderer, geometry, material, points;
+            let count = 0;
+            const SEPARATION = 150;
+            const AMOUNTX = 40;
+            const AMOUNTY = 60;
+
+            const container = document.getElementById('dotted-surface-container');
+
+            function init() {
+                // 1. Scene Setup
+                scene = new THREE.Scene();
+                // Fog helps the dots fade into the distance
+                scene.fog = new THREE.Fog(0xffffff, 2000, 10000);
+
+                camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 10000);
+                camera.position.set(0, 355, 1220);
+
+                renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+                renderer.setPixelRatio(window.devicePixelRatio);
+                renderer.setSize(window.innerWidth, window.innerHeight);
+
+                container.appendChild(renderer.domElement);
+
+                // 2. Create Geometry
+                const positions = [];
+                const colors = [];
+                geometry = new THREE.BufferGeometry();
+
+                for (let ix = 0; ix < AMOUNTX; ix++) {
+                    for (let iy = 0; iy < AMOUNTY; iy++) {
+                        const x = ix * SEPARATION - (AMOUNTX * SEPARATION) / 2;
+                        const y = 0;
+                        const z = iy * SEPARATION - (AMOUNTY * SEPARATION) / 2;
+
+                        positions.push(x, y, z);
+
+                        // Color (RGB: 0 to 1). Using light grey dots.
+                        colors.push(0, 0, 0);
+                    }
+                }
+
+                geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+                geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+                // 3. Material
+                material = new THREE.PointsMaterial({
+                    size: 8,
+                    vertexColors: true,
+                    transparent: true,
+                    opacity: 0.6,
+                    sizeAttenuation: true,
+                });
+
+                points = new THREE.Points(geometry, material);
+                scene.add(points);
+
+                window.addEventListener('resize', onWindowResize);
+                animate();
+            }
+
+            function onWindowResize() {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+
+            function animate() {
+                requestAnimationFrame(animate);
+
+                const positionAttribute = geometry.attributes.position;
+                const positions = positionAttribute.array;
+
+                let i = 0;
+                for (let ix = 0; ix < AMOUNTX; ix++) {
+                    for (let iy = 0; iy < AMOUNTY; iy++) {
+                        const index = i * 3;
+
+                        // This creates the waving motion
+                        positions[index + 1] =
+                            Math.sin((ix + count) * 0.3) * 50 +
+                            Math.sin((iy + count) * 0.5) * 50;
+
+                        i++;
+                    }
+                }
+
+                positionAttribute.needsUpdate = true;
+                renderer.render(scene, camera);
+                count += 0.1;
+            }
+
+            // Start the script
+            init();
+        })();
+    </script>
+</body>
+
+</html>

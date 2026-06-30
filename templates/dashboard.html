@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Dashboard - Smart Parking</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Google Fonts: Poppins -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Material Symbols -->
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header id="main-header">
+        <div class="nav-content">
+            <a href="/" class="logo-link">
+                <img src="{{ url_for('static', filename='gopark icon.png') }}" alt="GoPark Logo" class="logo-img">
+                <span class="logo-text">GoPark</span>
+            </a>
+
+            <button class="menu-toggle" id="menu-toggle" aria-label="Toggle navigation">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+
+            <nav class="nav-links" id="nav-links">
+                <div class="user-controls">
+                    {% if username %}
+                    <span class="user-welcome">Hi, {{ username }}</span>
+                    {% if mode == 'owner' %}
+                    <a href="{{ url_for('list_space') }}" class="btn btn-primary">List a Space</a>
+                    <a href="{{ url_for('toggle_mode') }}" class="btn btn-purple">Switch to Driver</a>
+                    {% else %}
+                    <a href="{{ url_for('toggle_mode') }}" class="btn btn-purple">Switch to Owner</a>
+                    {% endif %}
+                    <a href="{{ url_for('logout') }}" class="btn btn-logout">Logout</a>
+                    {% else %}
+                    <a href="{{ url_for('login') }}" class="btn btn-outline">Login</a>
+                    <a href="{{ url_for('signup') }}" class="btn btn-primary">Sign Up</a>
+                    {% endif %}
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <div class="dashboard-wrapper">
+        <a href="{{ url_for('home') }}"
+            style="color: #ffffff; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; margin-bottom: 30px; font-weight: 600;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">arrow_back</span> Back to Map
+        </a>
+
+        <section class="stats-overview">
+            {% if mode == 'owner' %}
+            <a href="#listings" class="stat-card blue">
+                <div class="stat-icon-wrapper">
+                    <span class="material-symbols-outlined">inventory_2</span>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value">{{ listings|length }}</span>
+                    <span class="stat-label">My Listings</span>
+                    <div class="stat-action">Manage <span class="material-symbols-outlined">chevron_right</span></div>
+                </div>
+            </a>
+            <a href="#incoming" class="stat-card green">
+                <div class="stat-icon-wrapper">
+                    <span class="material-symbols-outlined">notifications_active</span>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value">{{ owner_bookings|length }}</span>
+                    <span class="stat-label">Guest Bookings</span>
+                    <div class="stat-action">View <span class="material-symbols-outlined">chevron_right</span></div>
+                </div>
+            </a>
+            {% else %}
+            <a href="{{ url_for('rent_spot_intent') }}" class="stat-card green">
+                <div class="stat-icon-wrapper">
+                    <span class="material-symbols-outlined">add_business</span>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value">Rent Spot</span>
+                    <span class="stat-label">Earn Money</span>
+                    <div class="stat-action">Get Started <span class="material-symbols-outlined">chevron_right</span>
+                    </div>
+                </div>
+            </a>
+            <a href="{{ url_for('home') }}" class="stat-card blue">
+                <div class="stat-icon-wrapper">
+                    <span class="material-symbols-outlined">search</span>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value">Find Spot</span>
+                    <span class="stat-label">Book Nearby</span>
+                    <div class="stat-action">Search <span class="material-symbols-outlined">chevron_right</span></div>
+                </div>
+            </a>
+            {% endif %}
+            <a href="#my-bookings" class="stat-card purple">
+                <div class="stat-icon-wrapper">
+                    <span class="material-symbols-outlined">book_online</span>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value">{{ bookings|length }}</span>
+                    <span class="stat-label">My Bookings</span>
+                    <div class="stat-action">History <span class="material-symbols-outlined">chevron_right</span></div>
+                </div>
+            </a>
+        </section>
+        {% if mode == 'owner' %}
+        <!-- MY LISTINGS SECTION -->
+        <div class="section-header" id="listings">
+            <h2><span class="material-symbols-outlined">list_alt</span> My Listings</h2>
+            <a href="{{ url_for('list_space') }}"
+                style="font-size: 0.9rem; color: #3498db; text-decoration: none; font-weight: 600;">Add New +</a>
+        </div>
+
+        <div class="cards-grid">
+            {% if listings %}
+            {% for listing in listings %}
+            <div class="dash-card">
+                <div class="card-icon">
+                    <span class="material-symbols-outlined">local_parking</span>
+                </div>
+                <div class="card-body">
+                    <div class="card-main-info">
+                        <h3>{{ listing.name }}</h3>
+                        <p style="color: #7f8c8d; font-size: 0.85rem; margin: 4px 0;"><i class="fas fa-map-marker-alt"
+                                style="color: #e74c3c;"></i> {{ listing.address }}</p>
+                    </div>
+                    <div class="card-meta">
+                        <span><i class="fas fa-car-side"></i> {{ listing.capacity }} Slots</span>
+                        <span><i class="fas fa-check-circle" style="color: #27ae60;"></i> {{ listing.available }}
+                            Available</span>
+                        <span><i class="fas fa-tags"></i> ₹{{ listing.price_per_hour }}/hr</span>
+                    </div>
+                </div>
+                <div class="card-actions">
+                    <span class="card-badge badge-active">Live</span>
+                    <a href="/spot/{{ listing.id }}" class="btn"
+                        style="background-color: #3498db; margin: 0; text-align: center; font-size: 0.85rem;">View
+                        Public Page</a>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div
+                style="padding: 40px; text-align: center; background: white; border-radius: 12px; border: 1px dashed #ccc;">
+                <i class="fas fa-plus-circle" style="font-size: 2.5rem; color: #ddd; margin-bottom: 15px;"></i>
+                <p style="color: #95a5a6;">You haven't listed any spots yet.</p>
+                <a href="{{ url_for('list_space') }}" class="btn"
+                    style="margin-top: 15px; display: inline-block; background-color:#2ecc71;">Start Renting Spot</a>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- BOOKINGS ON MY SPOTS SECTION -->
+        <div class="section-header" id="incoming">
+            <h2><span class="material-symbols-outlined">calendar_today</span> Bookings on My Spots</h2>
+            <span
+                style="font-size: 0.85rem; background: #3498db; color: white; padding: 4px 14px; border-radius: 20px; font-weight: 600;">{{
+                owner_bookings|length }} New</span>
+        </div>
+
+        <div class="cards-grid">
+            {% if owner_bookings %}
+            {% for ob in owner_bookings %}
+            <div class="dash-card">
+                <div class="card-icon" style="color: #2ecc71; background: #e8f8f5;">
+                    <span class="material-symbols-outlined">person_pin_circle</span>
+                </div>
+                <div class="card-body">
+                    <div class="card-main-info">
+                        <h3>{{ ob.spot_name }}</h3>
+                        <p style="font-size: 0.95rem; font-weight: 500;">Guest: {{ ob.driver_name }}</p>
+                    </div>
+                    <div class="card-meta">
+                        <span><i class="fas fa-car"></i> {{ ob.vehicle_type }}</span>
+                        <span><i class="fas fa-clock"></i>
+                            {% if ob.start_time %}
+                            {{ ob.start_time.split('T')[1] }} ({{ ob.duration_hours }}h)
+                            {% else %}
+                            {{ ob.duration_hours }} hour(s)
+                            {% endif %}
+                        </span>
+                        <span class="revenue-text">Earned: ₹{{ ob.price_per_hour * ob.duration_hours }}</span>
+                    </div>
+                </div>
+                <div class="card-actions">
+                    <span class="card-badge badge-active">Active</span>
+                    <button class="btn" style="background-color: #bdc3c7; margin: 0; font-size: 0.85rem;"
+                        disabled>Completed</button>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div style="padding: 40px; text-align: center; color: #95a5a6;">
+                <i class="fas fa-info-circle"></i> No incoming bookings yet.
+            </div>
+            {% endif %}
+        </div>
+
+        {% endif %}
+
+        <!-- MY BOOKINGS SECTION (For both User and Owner) -->
+        <div class="section-header" id="my-bookings">
+            <h2><span class="material-symbols-outlined">bookmark</span> My Bookings</h2>
+        </div>
+
+        <div class="cards-grid">
+            {% if bookings %}
+            {% for booking in bookings %}
+            <div class="dash-card">
+                <div class="card-icon" style="color: #e67e22; background: #fef5e7;">
+                    <span class="material-symbols-outlined">vpn_key</span>
+                </div>
+                <div class="card-body">
+                    <div class="card-main-info">
+                        <h3>{{ booking.name }}</h3>
+                        <p style="color: #7f8c8d; font-size: 0.8rem; margin: 2px 0;">Booking ID: #ST-{{
+                            booking.booking_id }}</p>
+                    </div>
+                    <div class="card-meta">
+                        <span><i class="fas fa-car-alt"></i> {{ booking.vehicle_type }}</span>
+                        <span><i class="fas fa-calendar-alt"></i>
+                            {% if booking.start_time %}
+                            {{ booking.start_time.replace('T', ' ') }}
+                            {% else %}
+                            {{ booking.duration_hours }} hour(s)
+                            {% endif %}
+                        </span>
+                        <span class="revenue-text" style="color: #34495e;">Paid: ₹{{ booking.price_per_hour *
+                            booking.duration_hours }}</span>
+                    </div>
+                </div>
+                <div class="card-actions">
+                    <a href="https://www.google.com/maps/dir/?api=1&destination={{ booking.lat }},{{ booking.lng }}"
+                        target="_blank" class="btn"
+                        style="background-color: #9b59b6; margin: 0; text-align: center; font-size: 0.85rem;">
+                        <i class="fas fa-directions"></i> Get Directions
+                    </a>
+                    <form action="{{ url_for('cancel_booking', booking_id=booking.booking_id) }}" method="POST"
+                        style="margin: 0;" onsubmit="return confirm('Are you sure you want to cancel this booking?');">
+                        <button type="submit" class="btn"
+                            style="background-color: #e74c3c; width: 100%; margin: 0; font-size: 0.85rem;">Cancel</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div
+                style="padding: 40px; text-align: center; background: white; border-radius: 12px; border: 1px dashed #ccc;">
+                <i class="fas fa-search" style="font-size: 2.5rem; color: #ddd; margin-bottom: 15px;"></i>
+                <p style="color: #95a5a6;">You haven't booked any spots yet.</p>
+                <a href="{{ url_for('home') }}" class="btn" style="margin-top: 15px; display: inline-block;">Find
+                    Parking Now</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+</body>
+
+</html>
+
+<style>
+    body {
+        font-family: 'Poppins', sans-serif;
+        background-color: #ffffff;
+        /* Sets main background to white */
+        margin: 0;
+    }
+
+    .dashboard-wrapper {
+        background-color: #ffffff;
+        /* Ensures the content area is also white */
+        min-height: 100vh;
+    }
+
+    /* Since the background is now white, we need to ensure text is visible */
+    .dashboard-wrapper>a {
+        color: #2c3e50 !important;
+        /* Changed 'Back to Map' link from white to dark blue/grey */
+    }
+
+    .section-header h2 {
+        color: #2c3e50;
+    }
+</style>

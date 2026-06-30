@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Parking Finder</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body>
+    <header id="main-header">
+        <div class="nav-content">
+            <a href="/" class="logo-link">
+                <img src="{{ url_for('static', filename='gopark icon.png') }}" alt="GoPark Logo" class="logo-img">
+                <span class="logo-text">GoPark</span>
+            </a>
+
+            <button class="menu-toggle" id="menu-toggle" aria-label="Toggle navigation">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+
+            <nav class="nav-links" id="nav-links">
+                <div class="user-controls">
+                    {% if username %}
+                    <span class="user-welcome">Hi, {{ username }}</span>
+                    {% if mode == 'owner' %}
+                    <a href="{{ url_for('list_space') }}" class="btn btn-primary">List a Space</a>
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-accent">Dashboard</a>
+                    <a href="{{ url_for('toggle_mode') }}" class="btn btn-purple">Switch to Driver</a>
+                    {% else %}
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-accent">My Bookings</a>
+                    <a href="{{ url_for('toggle_mode') }}" class="btn btn-purple">Switch to Owner</a>
+                    {% endif %}
+                    <a href="{{ url_for('logout') }}" class="btn btn-logout">Logout</a>
+                    {% else %}
+                    <a href="{{ url_for('login') }}" class="btn btn-outline">Login</a>
+                    <a href="{{ url_for('signup') }}" class="btn btn-primary">Sign Up</a>
+                    {% endif %}
+                </div>
+            </nav>
+        </div>
+        <p id="status">Locating you...</p>
+    </header>
+
+    <main>
+        <div class="hero-wrapper" id="hero-wrapper">
+            <div class="hero-card">
+                <div class="hero-tabs">
+                    <a href="javascript:void(0)" class="hero-tab active" id="tab-find" onclick="switchHeroTab('find')">
+                        <i>🚗</i>
+                        <span>Find spot</span>
+                    </a>
+                    <a href="javascript:void(0)" class="hero-tab" id="tab-rent" onclick="switchHeroTab('rent')">
+                        <i>🏠</i>
+                        <span>Rent spot</span>
+                    </a>
+                </div>
+
+                <!-- FIND SPOT CONTENT -->
+                <div id="content-find">
+                    <h2>Find your perfect<br>parking spot</h2>
+                    <div class="hero-search">
+                        <div class="search-input-wrapper">
+                            <i>🔍</i>
+                            <input type="text" id="search-input" placeholder="Enter city or area...">
+                        </div>
+                        <button onclick="searchLocation()">Search now</button>
+                    </div>
+                </div>
+
+                <!-- RENT SPOT CONTENT -->
+                <div id="content-rent" style="display: none;">
+                    <h2>Earn money by<br>renting your spot</h2>
+                    <p style="font-size: 1.1rem; color: var(--text-muted); margin-bottom: 25px;">Join thousands of
+                        owners earning extra income daily.</p>
+
+                    <div class="hero-search">
+                        {% if username %}
+                        <button onclick="window.location.href='{{ url_for('rent_spot_intent') }}'">List my spot</button>
+                        {% else %}
+                        <button onclick="window.location.href='{{ url_for('rent_spot_intent') }}'">Get started</button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- NEW: SMART PARKING SECTION -->
+        <section class="info-section">
+            <div class="section-grid">
+                <div class="section-content reveal">
+                    <h2>Smart Parking for<br>Smart Cities</h2>
+                    <p>GoPark is transforming the way urban explorers interact with city spaces. By connecting drivers
+                        with underutilized parking spots, we reduce congestion, lower carbon emissions, and save you the
+                        most valuable resource: your time.</p>
+                    <p>Our platform leverages real-time data and secure blockchain-ready transactions to ensure that
+                        your journey is as smooth as your destination.</p>
+                    <div class="hero-search" style="justify-content: flex-start; padding: 0;">
+                        <!-- New Animated Button -->
+                        <button class="animated-button" onclick="window.location.href='/find'">
+                            <svg viewBox="0 0 24 24" class="arr-2" xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z">
+                                </path>
+                            </svg>
+                            <span class="text">Explore the map</span>
+                            <span class="circle"></span>
+                            <svg viewBox="0 0 24 24" class="arr-1" xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z">
+                                </path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="section-image reveal reveal-delay-2">
+                    <img src="{{ url_for('static', filename='secimg.jpg') }}" alt="Smart City Connectivity">
+                </div>
+            </div>
+        </section>
+
+        <!-- NEW: FEATURES GRID -->
+        <section class="features-section">
+            <div class="section-content reveal" style="text-align: center; margin-bottom: 60px;">
+                <h2 style="font-size: 2.5rem;">Why Choose GoPark?</h2>
+                <p style="max-width: 700px; margin: 0 auto;">Experience the next generation of urban mobility with
+                    features designed for convenience, security, and speed.</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card reveal reveal-delay-1">
+                    <div class="feature-icon">📍</div>
+                    <h3>Real-time Availability</h3>
+                    <p>Never pull into a full lot again. Our live tracking system ensures that your spot is waiting for
+                        you when you arrive.</p>
+                </div>
+                <div class="feature-card reveal reveal-delay-2">
+                    <div class="feature-icon">🔒</div>
+                    <h3>Secure Transactions</h3>
+                    <p>Verified owners and encrypted payment gateways provide peace of mind for every single booking you
+                        make.</p>
+                </div>
+                <div class="feature-card reveal reveal-delay-3">
+                    <div class="feature-icon">💰</div>
+                    <h3>Passive Income</h3>
+                    <p>Turn your empty driveway, garage, or commercial space into a steady revenue stream with zero
+                        hassle.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        function switchHeroTab(tab) {
+            const tabFind = document.getElementById('tab-find');
+            const tabRent = document.getElementById('tab-rent');
+            const contentFind = document.getElementById('content-find');
+            const contentRent = document.getElementById('content-rent');
+
+            if (tab === 'find') {
+                tabFind.classList.add('active');
+                tabRent.classList.remove('active');
+                contentFind.style.display = 'block';
+                contentRent.style.display = 'none';
+            } else {
+                tabRent.classList.add('active');
+                tabFind.classList.remove('active');
+                contentRent.style.display = 'block';
+                contentFind.style.display = 'none';
+            }
+        }
+
+        // SCROLL REVEAL LOGIC
+        const revealElements = document.querySelectorAll('.reveal');
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        revealElements.forEach(el => revealObserver.observe(el));
+    </script>
+
+    <!-- Footer Component -->
+    <footer
+        class="md:rounded-t-[48px] relative w-full max-w-6xl mx-auto flex flex-col items-center justify-center rounded-t-[32px] border-t bg-[radial-gradient(35%_128px_at_50%_0%,rgba(255,255,255,0.08),transparent)] px-6 py-12 lg:py-16 mt-20">
+        <div
+            class="bg-black/20 absolute top-0 right-1/2 left-1/2 h-px w-1/3 -translate-x-1/2 -translate-y-1/2 rounded-full blur">
+        </div>
+
+        <div class="grid w-full gap-8 xl:grid-cols-3 xl:gap-8">
+            <div class="space-y-4">
+                <img src="{{ url_for('static', filename='gopark icon.png') }}" alt="GoPark Logo" class="h-20 w-auto">
+                <p class="text-gray-500 mt-8 text-sm md:mt-0">
+                    © 2026 Asme. All rights reserved.
+                </p>
+            </div>
+
+            <div class="mt-10 grid grid-cols-2 gap-8 md:grid-cols-4 xl:col-span-2 xl:mt-0">
+
+                <!-- Company -->
+                <div>
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-gray-900">Company</h3>
+                    <ul class="text-gray-500 mt-4 space-y-2 text-sm">
+                        <li><a href="/faqs" class="hover:text-black transition-all">FAQs</a></li>
+                        <li><a href="/about" class="hover:text-black transition-all">About Us</a></li>
+                        <li><a href="/privacy" class="hover:text-black transition-all">Privacy Policy</a></li>
+                        <li><a href="/terms" class="hover:text-black transition-all">Terms of Services</a></li>
+                    </ul>
+                </div>
+                <!-- Resources -->
+                <div>
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-gray-900">Resources</h3>
+                    <ul class="text-gray-500 mt-4 space-y-2 text-sm">
+                        <li><a href="/brand" class="hover:text-black transition-all">Brand</a></li>
+                        <li><a href="/help" class="hover:text-black transition-all">Help</a></li>
+                    </ul>
+                </div>
+                <!-- Social -->
+                <div>
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-gray-900">Social Links</h3>
+                    <ul class="text-gray-500 mt-4 space-y-2 text-sm">
+                        <li><a href="#" class="hover:text-black inline-flex items-center transition-all"><i
+                                    class="me-1">FB</i> Facebook</a></li>
+                        <li><a href="#" class="hover:text-black inline-flex items-center transition-all"><i
+                                    class="me-1">IG</i> Instagram</a></li>
+                        <li><a href="#" class="hover:text-black inline-flex items-center transition-all"><i
+                                    class="me-1">YT</i> Youtube</a></li>
+                        <li><a href="#" class="hover:text-black inline-flex items-center transition-all"><i
+                                    class="me-1">LI</i> LinkedIn</a></li>
+
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+
+</html>
